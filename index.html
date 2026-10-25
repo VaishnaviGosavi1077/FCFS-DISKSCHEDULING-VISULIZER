@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FCFS Disk Scheduling Lab</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#"><span class="brand-icon">◉</span><span>OS<span class="brand-accent">LAB</span></span></a>
+      <div class="topbar-center"><span class="live-dot"></span> INTERACTIVE SIMULATION <span class="topbar-divider">/</span> DISK SCHEDULING</div>
+      <button id="themeBtn" class="icon-btn" title="Toggle theme" aria-label="Toggle theme">☼</button>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div>
+          <div class="eyebrow"><span class="eyebrow-line"></span> OPERATING SYSTEMS • EXPERIMENT 10</div>
+          <h1>FCFS Disk <span>Visualizer</span></h1>
+          <p class="hero-copy">See how the disk head serves requests in arrival order. Step through every seek, inspect the movement, and understand the cost in real time.</p>
+        </div>
+        <div class="hero-badge"><div class="badge-orbit">↗</div><div><strong>FCFS</strong><small>NON-PREEMPTIVE</small></div></div>
+      </section>
+
+      <section class="metrics-grid" aria-label="Simulation statistics">
+        <article class="metric-card"><div class="metric-top"><span>Total head movement</span><span class="metric-icon cyan">↔</span></div><div class="metric-value"><span id="totalMovement">—</span><small>cylinders</small></div><div class="metric-foot">Sum of all seek distances</div></article>
+        <article class="metric-card"><div class="metric-top"><span>Average seek distance</span><span class="metric-icon purple">⌁</span></div><div class="metric-value"><span id="avgMovement">—</span><small>cyl / request</small></div><div class="metric-foot">Total movement ÷ requests served</div></article>
+        <article class="metric-card"><div class="metric-top"><span>Requests served</span><span class="metric-icon green">✓</span></div><div class="metric-value"><span id="servedCount">0</span><small id="requestTotal">/ 5 requests</small></div><div class="progress-track"><div id="progressBar" class="progress-fill"></div></div></article>
+        <article class="metric-card"><div class="metric-top"><span>Current head position</span><span class="metric-icon orange">⌖</span></div><div class="metric-value"><span id="currentHead">50</span><small>cylinder</small></div><div class="metric-foot" id="statusText">Ready to simulate</div></article>
+      </section>
+
+      <section class="workspace-grid">
+        <aside class="panel config-panel">
+          <div class="panel-heading"><div><div class="section-kicker">CONFIGURATION</div><h2>Simulation setup</h2></div><span class="step-pill">01 / INPUT</span></div>
+          <label for="requestsInput">Cylinder request queue</label>
+          <textarea id="requestsInput" rows="3" spellcheck="false">82, 170, 43, 140, 24, 16, 190</textarea>
+          <div class="input-hint">Enter cylinder numbers separated by commas.</div>
+          <div class="form-row">
+            <div class="field"><label for="headInput">Initial head</label><input id="headInput" type="number" min="0" max="199" value="50" /></div>
+            <div class="field"><label for="diskSize">Disk cylinders</label><select id="diskSize"><option value="100">0 – 99</option><option value="200" selected>0 – 199</option><option value="500">0 – 499</option><option value="1000">0 – 999</option></select></div>
+          </div>
+          <div class="button-row"><button id="runBtn" class="btn btn-primary">▶ Run simulation</button><button id="randomBtn" class="btn btn-secondary">⤨ Random</button></div>
+          <div class="button-row"><button id="resetBtn" class="btn btn-ghost">↺ Reset</button><button id="exampleBtn" class="btn btn-ghost">Use example</button></div>
+          <div id="errorBox" class="error-box" role="alert"></div>
+          <div class="panel-separator"></div>
+          <div class="panel-heading compact"><div><div class="section-kicker">PLAYBACK</div><h3>Animation controls</h3></div><span id="stepCounter" class="step-pill">0 / 7</span></div>
+          <div class="playback-controls"><button id="prevBtn" class="control-btn" title="Previous step">◀</button><button id="playBtn" class="control-btn play-control" title="Play">▶</button><button id="nextBtn" class="control-btn" title="Next step">▶|</button><button id="restartBtn" class="control-btn" title="Restart">↺</button></div>
+          <div class="speed-row"><label for="speedInput">Animation speed</label><strong id="speedLabel">1×</strong></div>
+          <input id="speedInput" class="range" type="range" min="1" max="5" value="3" />
+          <div class="range-labels"><span>Slow</span><span>Fast</span></div>
+        </aside>
+
+        <section class="panel visual-panel">
+          <div class="panel-heading"><div><div class="section-kicker">LIVE VISUALIZATION</div><h2>Disk head movement</h2></div><span class="live-label"><span class="live-dot"></span> LIVE</span></div>
+          <div class="visual-legend"><span><i class="legend-dot head-dot"></i>Disk head</span><span><i class="legend-dot pending-dot"></i>Pending request</span><span><i class="legend-dot done-dot"></i>Served request</span></div>
+          <div class="disk-stage"><canvas id="diskCanvas" aria-label="Animated disk track visualization"></canvas><div class="canvas-caption"><span>CYLINDER INDEX</span><span id="canvasHeadLabel">HEAD @ 50</span></div></div>
+          <div class="current-move"><div><span class="section-kicker">CURRENT SEEK</span><div id="moveText" class="move-text">Ready to begin</div></div><div class="move-distance"><span id="moveDistance">—</span><small>cylinders moved</small></div></div>
+          <div class="sequence-wrap"><div class="sequence-heading"><h3>Request sequence</h3><span>IN ARRIVAL ORDER</span></div><div id="sequence" class="sequence"></div></div>
+        </section>
+      </section>
+
+      <section class="lower-grid">
+        <article class="panel chart-panel"><div class="panel-heading"><div><div class="section-kicker">ANALYTICS</div><h2>Seek distance per request</h2></div><span class="chart-tag">CYLINDERS</span></div><div class="chart-wrap"><canvas id="seekChart"></canvas></div></article>
+        <article class="panel table-panel"><div class="panel-heading"><div><div class="section-kicker">STEP-BY-STEP</div><h2>Movement breakdown</h2></div><button id="downloadBtn" class="btn btn-small btn-secondary">↓ Export CSV</button></div><div class="table-scroll"><table><thead><tr><th>STEP</th><th>FROM</th><th>TO</th><th>DISTANCE</th><th>STATUS</th></tr></thead><tbody id="movementTable"><tr><td colspan="5" class="empty-cell">Run a simulation to see the seek table.</td></tr></tbody></table></div><div class="table-footer"><span>FCFS serves requests in the exact order received.</span><strong id="tableTotal">Total: —</strong></div></article>
+      </section>
+
+      <section class="info-strip"><div class="info-symbol">i</div><div><strong>How FCFS works</strong><p>First Come, First Served handles disk requests in their original arrival order. It is easy to implement and fair by arrival time, but it can cause large head movements when requests are far apart.</p></div><div class="formula"><span>FORMULA</span><strong>Total movement = Σ | next − current |</strong></div></section>
+      <footer><span>OS LAB / FCFS DISK SCHEDULING</span><span>Built for learning • Interactive simulation</span></footer>
+    </main>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
